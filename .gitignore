@@ -1,0 +1,7 @@
+cb-1.0.1-1-x86_64.pkg.tar.zst
+.vscode/tasks.json
+pkg/cb/.BUILDINFO
+pkg/cb/.MTREE
+pkg/cb/.PKGINFO
+pkg/cb/usr/bin/cb
+build/cb

@@ -24,23 +24,36 @@ struct {
 	char* output;
 } data;
 
+void show_error(char*);
+void* check_allocation(void*);
 void add_option(char*, int, char*);
-void parse_args(int, char* argv[]);
 void show_help();
+int select_base(char*);
+void parse_args(int, char* argv[]);
 void do_conversion();
 
 int main(int argc, char* argv[]) {
-	add_option("bin", 2, "Binary system. Power base: 2");
-	add_option("oct", 8, "Octal system. Power base: 8");
-	add_option("dec", 10, "Decimal system. Power base: 10");
-	add_option("hex", 16, "Hexadecimal system. Power base: 16");
+	add_option("bin", 2, "Binary system. Power base: 2.");
+	add_option("oct", 8, "Octal system. Power base: 8.");
+	add_option("dec", 10, "Decimal system. Power base: 10.");
+	add_option("hex", 16, "Hexadecimal system. Power base: 16.");
 	parse_args(argc, argv);
 	do_conversion();
 	printf("%s\n", data.output);
 }
 
+void show_error(char* error) {
+	fprintf(stderr, "%s\n", error);
+	exit(1);
+}
+
+void* check_allocation(void* ptr) {
+	if (!ptr) show_error("Memory error!");
+	return ptr;
+}
+
 void add_option(char* name, int value, char* help) {
-    Option* opt = (Option*) malloc(sizeof(Option));
+    Option* opt = (Option*) check_allocation(malloc(sizeof(Option)));
     opt->name = name;
 	opt->value = value;
 	opt->help = help;
@@ -48,7 +61,48 @@ void add_option(char* name, int value, char* help) {
     opts = opt;
 }
 
+void show_help() {
+	fprintf(stderr, "Usage: ./cb <INPUT_BASE> <OUTPUT_BASE> [INPUT]\n\n");
+	fprintf(stderr, "If INPUT is empty or equal to '-', reads from stdin.\n\n");
+
+	Option* opt = opts;
+	fprintf(stderr, "INPUT_BASE and OUTPUT_BASE must be integers from 1 to 16");
+	fprintf(stderr, " or can be choosen from the following list:\n");
+    while(opt) {
+    	fprintf(stderr, " - %s\t%s\n", opt->name, opt->help);
+        opt = opt->next;
+    }
+
+	fprintf(stderr, "\n");
+	exit(1);
+}
+
+void parse_args(int argc, char* argv[]) {
+	if (argc < 3 || argc > 4)
+		show_help();
+
+	if ((data.in_base = select_base(argv[1])) == 0
+		|| (data.out_base = select_base(argv[2])) == 0)
+		show_help();
+
+	if (argc == 3 || argv[3][0] == '-') {
+		data.input = (char*) check_allocation(malloc(BUF_SIZE));
+		data.input[0] = '\0';
+		char* buffer = (char*) check_allocation(malloc(BUF_SIZE));
+		int totalSize = 1;
+		while(fgets(buffer, BUF_SIZE, stdin)) {
+			int len = strlen(buffer);
+			totalSize += len;
+			data.input = (char*) check_allocation(realloc(data.input, totalSize));
+			strncat(data.input, buffer, len);
+		}
+	} else data.input = argv[3];
+}
+
 int select_base(char* arg) {
+	int base = atoi(arg);
+	if (base) return base;
+
 	Option* opt = opts;
 	while(opt) {
 		if (strcmp(arg, opt->name) == 0)
@@ -57,50 +111,6 @@ int select_base(char* arg) {
 	}
 
 	return 0;
-}
-
-void parse_args(int argc, char* argv[]) {
-	if (argc < 5 || argc > 6) {
-		show_help();
-		exit(1);
-	}
-
-	if (strcmp(argv[1], "from") != 0 ||
-		(data.in_base = select_base(argv[2])) == 0) {
-		show_help();
-		exit(1);
-	}
-
-	if (strcmp(argv[3], "to") != 0 ||
-		(data.out_base = select_base(argv[4])) == 0) {
-		show_help();
-		exit(1);
-	}
-
-	if (argc == 5) {
-		data.input = (char*) malloc(BUF_SIZE);
-		data.input[0] = '\0';
-		char* buffer = (char*) malloc(BUF_SIZE);
-		int totalSize = 1;
-		while(fgets(buffer, BUF_SIZE, stdin)) {
-			totalSize += strlen(buffer);
-			data.input = (char*) realloc(data.input, totalSize);
-			strcat(data.input, buffer);
-		}
-	} else data.input = argv[5];
-}
-
-void show_help() {
-	printf("Usage: ./cb from <INPUT_BASE> to <OUTPUT_BASE> [INPUT]\n\n");
-	printf("If INPUT is empty or equal to '-', reads from stdin.\n\n");
-
-	Option* opt = opts;
-	printf("INPUT_BASE and OUTPUT_BASE can be choosen from the following list:\n");
-    while(opt) {
-    	printf(" - %s\t%s\n", opt->name, opt->help);
-        opt = opt->next;
-    }
-	printf("\n");
 }
 
 int symbol_to_digit(char);
@@ -131,8 +141,7 @@ int symbol_to_digit(char symbol) {
 		if (symbols[i] == symbol)
 			return i;
 
-	printf("Error: input is not valid!\n");
-	exit(1);
+	show_error("Input is not valid!");
 }
 
 int to_decimal(char* input) {
@@ -151,13 +160,12 @@ char digit_to_symbol(int digit) {
 	if (digit < strlen(symbols))
 		return symbols[digit];
 
-	printf("Unexpected error!\n");
-	exit(1);
+	show_error("Unexpected error!");
 }
 
 void to_output_base(int value, char sep) {
 	int size = log(value)/log(data.out_base)+2;
-	char* output = (char*) malloc(size*sizeof(char));
+	char* output = (char*) check_allocation(malloc(size*sizeof(char)));
 	output = &output[size-1];
 	output[0] = '\0';
 	while (value > 0) {
@@ -171,7 +179,7 @@ void to_output_base(int value, char sep) {
 		data.output = output;
 	else {
 		size = strlen(data.output)+strlen(output)+2;
-		data.output = (char*) realloc(data.output, size*sizeof(char));
+		data.output = (char*) check_allocation(realloc(data.output, size*sizeof(char)));
 		if (sep != '\0')
 			strcat(data.output, &sep);
 		strcat(data.output, output);
