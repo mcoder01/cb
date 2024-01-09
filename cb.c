@@ -127,7 +127,7 @@ void do_conversion() {
 
 int symbol_to_digit(char symbol) {
 	char* symbols = SYMBOLS;
-	for (int i = 0; symbols[i]; i++)
+	for (int i = 0; i < data.in_base; i++)
 		if (symbols[i] == symbol)
 			return i;
 
