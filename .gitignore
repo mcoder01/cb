@@ -5,3 +5,7 @@ pkg/cb/.MTREE
 pkg/cb/.PKGINFO
 pkg/cb/usr/bin/cb
 build/cb
+cb-1.1.0-1-x86_64.pkg.tar.zst
+.vscode/settings.json
+src/a.out
+src/prova

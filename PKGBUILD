@@ -1,5 +1,5 @@
 pkgname=cb
-pkgver=1.1.0
+pkgver=1.2.0
 pkgrel=1
 
 pkgdesc="An easy-to-use tool for converting from one base system to another."
